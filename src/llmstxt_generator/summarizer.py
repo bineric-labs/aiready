@@ -3,24 +3,63 @@
 import os
 from typing import Optional
 
-from anthropic import Anthropic
+import httpx
 from rich.console import Console
 
 console = Console()
+
+BINERIC_API_URL = "https://api.bineric.com/v1"
+BINERIC_DEFAULT_MODEL = "bineric-1"
 
 
 class Summarizer:
     """Generate concise titles and descriptions for pages using LLM."""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("BINERIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+        self.api_key = api_key or os.getenv("BINERIC_API_KEY")
+        self.base_url = os.getenv("BINERIC_API_URL", BINERIC_API_URL)
+        self.model = os.getenv("BINERIC_MODEL", BINERIC_DEFAULT_MODEL)
 
         if not self.api_key:
             console.print("[yellow]No API key found. Using page titles only.[/yellow]")
+            console.print("[yellow]Get your API key at https://bineric.com/platform[/yellow]")
             self.client = None
         else:
-            base_url = os.getenv("BINERIC_API_URL", "https://api.anthropic.com")
-            self.client = Anthropic(api_key=self.api_key, base_url=base_url)
+            self.client = httpx.Client(
+                base_url=self.base_url,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=30.0,
+            )
+
+    def _call_api(self, prompt: str, max_tokens: int = 150) -> Optional[str]:
+        """Make a request to the Bineric API."""
+        if not self.client:
+            return None
+
+        try:
+            response = self.client.post(
+                "/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                console.print("[red]Invalid API key. Get your key at https://bineric.com/platform[/red]")
+            else:
+                console.print(f"[red]API error: {e.response.status_code}[/red]")
+            return None
+        except Exception as e:
+            console.print(f"[red]API error: {e}[/red]")
+            return None
 
     def summarize_page(self, title: str, content: str, url: str) -> dict:
         """Generate a concise title and description for a page."""
@@ -46,38 +85,30 @@ Respond in this exact format:
 TITLE: <your title>
 DESCRIPTION: <your description>"""
 
-        try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=150,
-                messages=[{"role": "user", "content": prompt}],
-            )
+        text = self._call_api(prompt, max_tokens=150)
 
-            text = response.content[0].text
-            lines = text.strip().split("\n")
-
-            result_title = title
-            result_desc = ""
-
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result_title = line.replace("TITLE:", "").strip()
-                elif line.startswith("DESCRIPTION:"):
-                    result_desc = line.replace("DESCRIPTION:", "").strip()
-
-            return {
-                "title": result_title,
-                "description": result_desc,
-            }
-
-        except Exception as e:
-            console.print(f"[red]Summarization error: {e}[/red]")
+        if not text:
             return {
                 "title": title or self._title_from_url(url),
                 "description": "",
             }
 
-    def summarize_site(self, pages: list[dict]) -> dict:
+        lines = text.strip().split("\n")
+        result_title = title
+        result_desc = ""
+
+        for line in lines:
+            if line.startswith("TITLE:"):
+                result_title = line.replace("TITLE:", "").strip()
+            elif line.startswith("DESCRIPTION:"):
+                result_desc = line.replace("DESCRIPTION:", "").strip()
+
+        return {
+            "title": result_title,
+            "description": result_desc,
+        }
+
+    def summarize_site(self, pages: list) -> dict:
         """Generate a site-level title and description."""
         if not self.client or not pages:
             return {
@@ -99,29 +130,21 @@ Respond in this exact format:
 TITLE: <site title>
 DESCRIPTION: <site description>"""
 
-        try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=100,
-                messages=[{"role": "user", "content": prompt}],
-            )
+        text = self._call_api(prompt, max_tokens=100)
 
-            text = response.content[0].text
-            lines = text.strip().split("\n")
-
-            result = {"title": "Documentation", "description": ""}
-
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("DESCRIPTION:"):
-                    result["description"] = line.replace("DESCRIPTION:", "").strip()
-
-            return result
-
-        except Exception as e:
-            console.print(f"[red]Site summarization error: {e}[/red]")
+        if not text:
             return {"title": "Documentation", "description": ""}
+
+        lines = text.strip().split("\n")
+        result = {"title": "Documentation", "description": ""}
+
+        for line in lines:
+            if line.startswith("TITLE:"):
+                result["title"] = line.replace("TITLE:", "").strip()
+            elif line.startswith("DESCRIPTION:"):
+                result["description"] = line.replace("DESCRIPTION:", "").strip()
+
+        return result
 
     def _title_from_url(self, url: str) -> str:
         """Generate a basic title from URL path."""

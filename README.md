@@ -100,7 +100,15 @@ Or use a `.env` file:
 BINERIC_API_KEY=your-key-here
 ```
 
-Get your API key at [bineric.ai](https://bineric.ai)
+**Get your API key at [bineric.com/platform](https://bineric.com/platform)**
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BINERIC_API_KEY` | Your Bineric API key | (required for AI mode) |
+| `BINERIC_API_URL` | API base URL | `https://api.bineric.com/v1` |
+| `BINERIC_MODEL` | Model to use | `bineric-1` |
 
 ## How it works
 
@@ -126,6 +134,8 @@ MIT
 
 ## Credits
 
-Built by [Bineric Labs](https://bineric.ai)
+Built by [Bineric Labs](https://bineric.com)
+
+Powered by [Bineric Platform](https://bineric.com/platform) - Privacy-focused AI
 
 Inspired by [llms.txt](https://llmstxt.org/) by Answer.AI

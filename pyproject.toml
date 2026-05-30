@@ -29,7 +29,6 @@ dependencies = [
     "click>=8.1.0",
     "rich>=13.0.0",
     "python-dotenv>=1.0.0",
-    "anthropic>=0.40.0",
 ]
 
 [project.optional-dependencies]
@@ -46,6 +45,7 @@ llmstxt = "llmstxt_generator.cli:main"
 Homepage = "https://github.com/bineric-labs/llmstxt-generator"
 Repository = "https://github.com/bineric-labs/llmstxt-generator"
 Issues = "https://github.com/bineric-labs/llmstxt-generator/issues"
+Documentation = "https://bineric.com/platform/docs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/llmstxt_generator"]
