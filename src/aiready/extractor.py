@@ -1,6 +1,8 @@
 """Extract main content from HTML pages."""
 
+import json
 import re
+
 from bs4 import BeautifulSoup, NavigableString
 
 
@@ -64,6 +66,8 @@ class ContentExtractor:
 
         text = self._get_text(main_content)
         text = self._clean_text(text)
+        if len(text) < 100:
+            text = self._extract_from_embedded_app_data(html, soup) or text
 
         return {
             "title": title,
@@ -110,6 +114,66 @@ class ContentExtractor:
             return og_title["content"]
 
         return ""
+
+    def _extract_from_embedded_app_data(self, html: str, soup: BeautifulSoup) -> str:
+        """Extract text from embedded app data used by server-rendered JS frameworks."""
+        values = []
+
+        for meta_selector in (
+            {"name": "description"},
+            {"property": "og:description"},
+        ):
+            meta = soup.find("meta", attrs=meta_selector)
+            if meta and meta.get("content"):
+                values.append(meta["content"])
+
+        patterns = [
+            r'"(?:children|code|content)":\s*"((?:\\.|[^"\\])*)"',
+            r'\\"(?:children|code|content)\\":\\"(.*?)\\"',
+        ]
+
+        for pattern in patterns:
+            for raw_value in re.findall(pattern, html):
+                value = self._decode_embedded_string(raw_value)
+                if self._is_useful_embedded_text(value):
+                    values.append(value)
+
+        deduped = []
+        seen = set()
+        for value in values:
+            cleaned = self._clean_text(value)
+            if cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                deduped.append(cleaned)
+
+        return "\n".join(deduped)
+
+    def _decode_embedded_string(self, value: str) -> str:
+        """Decode escaped strings from embedded app payloads."""
+        try:
+            return json.loads(f'"{value}"')
+        except json.JSONDecodeError:
+            try:
+                return json.loads(f'"{value.replace(chr(92), chr(92) * 2)}"')
+            except json.JSONDecodeError:
+                return value
+
+    def _is_useful_embedded_text(self, value: str) -> bool:
+        """Filter framework internals from embedded app text."""
+        value = value.strip()
+        if len(value) < 3:
+            return False
+        if value.startswith(("{", "[")):
+            return False
+        if value.startswith(("$", "/", "_")):
+            return False
+        if "This page could not be found" in value:
+            return False
+        if "/_next/" in value or "static/chunks" in value:
+            return False
+        if re.fullmatch(r"[\W_]+", value):
+            return False
+        return True
 
     def _get_text(self, element) -> str:
         """Get text content preserving some structure."""

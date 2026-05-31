@@ -2,7 +2,9 @@
 
 import asyncio
 import fnmatch
+import subprocess
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import urljoin, urlparse
@@ -16,6 +18,15 @@ console = Console()
 BROWSER_USER_AGENT = (
     "Mozilla/5.0 (compatible; aiready/0.1.0; +https://github.com/bineric-labs/aiready)"
 )
+
+
+@dataclass
+class FetchResult:
+    """Response data needed by the crawler."""
+
+    status_code: int
+    content_type: str
+    text: str
 
 
 class Crawler:
@@ -113,10 +124,9 @@ class Crawler:
                 visited.add(url)
 
                 try:
-                    response = await client.get(url)
+                    response = await self._fetch(client, url)
                     if response.status_code == 200:
-                        content_type = response.headers.get("content-type", "")
-                        if "text/html" in content_type:
+                        if "text/html" in response.content_type:
                             pages.append({
                                 "url": url,
                                 "path": parsed.path,
@@ -140,7 +150,7 @@ class Crawler:
 
         for sitemap_url in sitemap_locations:
             try:
-                response = await client.get(sitemap_url)
+                response = await self._fetch(client, sitemap_url)
                 if response.status_code == 200:
                     return self._parse_sitemap(response.text, base_url)
             except Exception:
@@ -184,7 +194,7 @@ class Crawler:
             visited.add(url)
 
             try:
-                response = await client.get(url)
+                response = await self._fetch(client, url)
                 if response.status_code != 200:
                     continue
 
@@ -208,3 +218,54 @@ class Crawler:
                 continue
 
         return list(urls)
+
+    async def _fetch(self, client: httpx.AsyncClient, url: str) -> FetchResult:
+        """Fetch a URL with httpx, falling back to curl for older TLS stacks."""
+        try:
+            response = await client.get(url)
+            return FetchResult(
+                status_code=response.status_code,
+                content_type=response.headers.get("content-type", ""),
+                text=response.text,
+            )
+        except httpx.ConnectError as e:
+            message = str(e).lower()
+            if "tlsv1_alert_protocol_version" not in message and "ssl" not in message:
+                raise
+
+            return await asyncio.to_thread(self._fetch_with_curl, url)
+
+    def _fetch_with_curl(self, url: str) -> FetchResult:
+        """Fetch a URL with curl when Python's SSL runtime cannot negotiate TLS."""
+        status_marker = "__AIREADY_STATUS__:"
+        type_marker = "__AIREADY_CONTENT_TYPE__:"
+
+        command = [
+            "curl",
+            "-L",
+            "-sS",
+            "--max-time",
+            "30",
+            "-A",
+            BROWSER_USER_AGENT,
+            "-w",
+            f"\n{status_marker}%{{http_code}}\n{type_marker}%{{content_type}}\n",
+            url,
+        ]
+
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=35,
+        )
+
+        body, status_text = result.stdout.rsplit(f"\n{status_marker}", 1)
+        status_line, content_type_line = status_text.split(f"\n{type_marker}", 1)
+
+        return FetchResult(
+            status_code=int(status_line.strip()),
+            content_type=content_type_line.strip(),
+            text=body,
+        )
