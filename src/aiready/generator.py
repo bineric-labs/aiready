@@ -63,7 +63,7 @@ class LLMSTxtGenerator:
                 page["extracted_content"] = extracted["content"]
                 processed_pages.append(page)
 
-            if self.use_ai and self.summarizer:
+            if self.use_ai and self.summarizer and self.summarizer.client:
                 progress.update(task, description="Generating summaries with AI...")
 
                 site_info = self.summarizer.summarize_site(processed_pages)
@@ -89,7 +89,7 @@ class LLMSTxtGenerator:
     def _get_site_name(self) -> str:
         """Get a basic site name from source."""
         if self.crawler.is_local:
-            return Path(self.source).name
+            return Path(self.source).resolve().name
 
         parsed = urlparse(self.source)
         return parsed.netloc
@@ -197,6 +197,9 @@ async def generate_llmstxt(
     )
 
     llms_txt, llms_full_txt = await generator.generate()
+
+    if not llms_txt and not llms_full_txt:
+        raise ValueError("No pages found; no output files were written.")
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)

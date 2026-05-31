@@ -1,7 +1,7 @@
 """Command-line interface for aiready."""
 
 import asyncio
-from typing import Optional, Tuple
+from typing import Optional
 
 import click
 from dotenv import load_dotenv

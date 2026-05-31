@@ -1,5 +1,6 @@
 """Generate titles and descriptions using LLM."""
 
+import json
 import os
 from typing import Optional
 
@@ -8,8 +9,8 @@ from rich.console import Console
 
 console = Console()
 
-BINERIC_API_URL = "https://api.bineric.com/v1"
-BINERIC_DEFAULT_MODEL = "bineric-1"
+BINERIC_API_URL = "https://api.bineric.com/api/v1/ai"
+BINERIC_DEFAULT_MODEL = "claude-sonnet-4.6"
 
 
 class Summarizer:
@@ -18,7 +19,7 @@ class Summarizer:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("BINERIC_API_KEY")
         self.base_url = os.getenv("BINERIC_API_URL", BINERIC_API_URL)
-        self.model = os.getenv("BINERIC_MODEL", BINERIC_DEFAULT_MODEL)
+        self.model = BINERIC_DEFAULT_MODEL
 
         if not self.api_key:
             console.print("[yellow]No API key found. Using page titles only.[/yellow]")
@@ -28,7 +29,7 @@ class Summarizer:
             self.client = httpx.Client(
                 base_url=self.base_url,
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
+                    "api-key": self.api_key,
                     "Content-Type": "application/json",
                 },
                 timeout=30.0,
@@ -49,8 +50,7 @@ class Summarizer:
                 },
             )
             response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
+            return self._parse_response(response)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 console.print("[red]Invalid API key. Get your key at https://bineric.com/platform[/red]")
@@ -60,6 +60,43 @@ class Summarizer:
         except Exception as e:
             console.print(f"[red]API error: {e}[/red]")
             return None
+
+    def _parse_response(self, response: httpx.Response) -> Optional[str]:
+        """Parse either chat-completions JSON or Bineric's streaming event response."""
+        content_type = response.headers.get("content-type", "")
+
+        if "application/json" in content_type:
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+
+        text = response.text
+        final_response = None
+        deltas = []
+
+        for line in text.splitlines():
+            if not line.startswith("data:"):
+                continue
+
+            payload = line.removeprefix("data:").strip()
+            if not payload or payload == "[DONE]":
+                continue
+
+            try:
+                data = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+
+            if isinstance(data.get("response"), str):
+                final_response = data["response"]
+            elif isinstance(data.get("text"), str):
+                deltas.append(data["text"])
+
+        if final_response:
+            return final_response
+        if deltas:
+            return "".join(deltas)
+
+        return None
 
     def summarize_page(self, title: str, content: str, url: str) -> dict:
         """Generate a concise title and description for a page."""

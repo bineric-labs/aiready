@@ -10,16 +10,16 @@ AI agents (ChatGPT, Claude, Perplexity, etc.) are browsing the web. `llms.txt` i
 
 **aiready** crawls your site and generates this file automatically.
 
-## Installation
-
-```bash
-pip install aiready
-```
-
 ## Usage
 
 ```bash
 aiready https://yoursite.com
+```
+
+Add your Bineric API key to generate AI-powered summaries:
+
+```bash
+aiready https://yoursite.com --api-key your-key-here
 ```
 
 ### Options
@@ -37,6 +37,9 @@ aiready https://example.com --max-pages 50
 # Output to specific directory
 aiready https://example.com --output ./output
 
+# Use an API key for AI summaries
+aiready https://example.com --api-key your-key-here
+
 # Skip AI summarization (faster, uses page titles only)
 aiready https://example.com --no-ai
 ```
@@ -49,7 +52,7 @@ aiready ./my-docs
 
 ## Output
 
-Two files are generated:
+Successful runs generate two files:
 
 **llms.txt** — Compact index for AI agents:
 ```markdown
@@ -67,7 +70,13 @@ Two files are generated:
 
 ## Configuration
 
-For AI-powered summaries, set your API key:
+For AI-powered summaries, pass your API key:
+
+```bash
+aiready https://yoursite.com --api-key your-key-here
+```
+
+Or set it once as an environment variable:
 
 ```bash
 export BINERIC_API_KEY=your-key-here
@@ -77,9 +86,10 @@ Get your API key at [bineric.com/platform](https://bineric.com/platform)
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `BINERIC_API_KEY` | Your Bineric API key | (required for AI mode) |
-| `BINERIC_API_URL` | API base URL | `https://api.bineric.com/v1` |
-| `BINERIC_MODEL` | Model to use | `bineric-1` |
+| `BINERIC_API_KEY` | Your Bineric API key | (required for AI summaries) |
+| `BINERIC_API_URL` | API base URL | `https://api.bineric.com/api/v1/ai` |
+
+AI summaries always use `claude-sonnet-4.6`. Without an API key, aiready still runs and uses extracted page titles.
 
 ## Why llms.txt?
 

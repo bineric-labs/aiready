@@ -13,6 +13,10 @@ from rich.console import Console
 
 console = Console()
 
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (compatible; aiready/0.1.0; +https://github.com/bineric-labs/aiready)"
+)
+
 
 class Crawler:
     """Discover pages from a website or local folder."""
@@ -84,7 +88,7 @@ class Crawler:
         async with httpx.AsyncClient(
             timeout=30.0,
             follow_redirects=True,
-            headers={"User-Agent": "llmstxt-generator/0.1.0"},
+            headers={"User-Agent": BROWSER_USER_AGENT},
         ) as client:
             sitemap_urls = await self._get_sitemap_urls(client, base_url)
 
@@ -169,7 +173,7 @@ class Crawler:
         self, client: httpx.AsyncClient, base_url: str, parsed_base
     ) -> list[str]:
         """Discover pages by following links from the homepage."""
-        urls = set()
+        urls = {base_url}
         to_visit = [base_url]
         visited = set()
 
