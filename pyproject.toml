@@ -3,15 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "llmstxt-generator"
+name = "aiready"
 version = "0.1.0"
-description = "Generate llms.txt files for any website or local folder"
+description = "Make your site AI ready. Generate llms.txt files for AI agents."
 readme = "README.md"
 license = "MIT"
 authors = [
-    { name = "Bineric Labs", email = "hello@bineric.ai" }
+    { name = "Bineric", email = "hello@bineric.com" }
 ]
-keywords = ["llms", "llms.txt", "ai", "documentation", "crawler"]
+keywords = ["ai", "llms", "llms.txt", "ai-ready", "ai-agents", "crawler"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -39,16 +39,15 @@ dev = [
 ]
 
 [project.scripts]
-llmstxt = "llmstxt_generator.cli:main"
+aiready = "aiready.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/bineric-labs/llmstxt-generator"
-Repository = "https://github.com/bineric-labs/llmstxt-generator"
-Issues = "https://github.com/bineric-labs/llmstxt-generator/issues"
-Documentation = "https://bineric.com/platform/docs"
+Homepage = "https://github.com/bineric-labs/aiready"
+Repository = "https://github.com/bineric-labs/aiready"
+Issues = "https://github.com/bineric-labs/aiready/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/llmstxt_generator"]
+packages = ["src/aiready"]
 
 [tool.ruff]
 line-length = 100

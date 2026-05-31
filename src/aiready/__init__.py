@@ -1,4 +1,4 @@
-"""llmstxt-generator: Generate llms.txt files for any website or local folder."""
+"""aiready: Make your site AI ready."""
 
 __version__ = "0.1.0"
 

@@ -1,4 +1,4 @@
-"""Command-line interface for llmstxt-generator."""
+"""Command-line interface for aiready."""
 
 import asyncio
 from typing import Optional, Tuple
@@ -53,28 +53,32 @@ def main(
     no_ai: bool,
     api_key: Optional[str],
 ) -> None:
-    """Generate llms.txt for a website or local folder.
+    """Make your site AI ready.
+
+    Generate llms.txt for a website or local folder.
 
     SOURCE can be a URL (https://example.com) or a local path (./docs)
 
     Examples:
 
-        llmstxt https://docs.example.com
+        aiready https://docs.example.com
 
-        llmstxt ./my-docs --output ./output
+        aiready ./my-docs --output ./output
 
-        llmstxt https://example.com --include "/docs/*" --max-pages 50
+        aiready https://example.com --include "/docs/*" --max-pages 50
     """
     load_dotenv()
 
     console.print("""
 [bold magenta]
- _ _ _ __ ___  ___ _        _
-| | | '_ ` _ \/ __| |___  _| |_
-| | | | | | | \__ \ __\ \/ / __|
-|_|_|_| |_| |_|___/\__/\__/\__|
+        _                     _
+   __ _(_)_ __ ___  __ _  __| |_   _
+  / _` | | '__/ _ \/ _` |/ _` | | | |
+ | (_| | | | |  __/ (_| | (_| | |_| |
+  \__,_|_|_|  \___|\__,_|\__,_|\__, |
+                               |___/
 [/bold magenta]
-[dim]llms.txt generator by Bineric Labs[/dim]
+[dim]Make your site AI ready[/dim]
 """)
 
     include_patterns = list(include) if include else None

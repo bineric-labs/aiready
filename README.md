@@ -1,108 +1,79 @@
-# llmstxt-generator
+# aiready
 
-Generate `llms.txt` files for any website or local folder. Help AI agents understand your content.
+**Make your site AI ready.**
 
-## What is llms.txt?
+Generate `llms.txt` files so AI agents can discover and understand your website.
 
-[llms.txt](https://llmstxt.org/) is a proposed standard for helping LLMs understand your website. It's like `robots.txt`, but for AI.
+## What is this?
 
-## Features
+AI agents (ChatGPT, Claude, Perplexity, etc.) are browsing the web. `llms.txt` is a standard that helps them understand your site — like `sitemap.xml` for search engines, but for AI.
 
-- **Crawl any website** — Automatically discovers pages via sitemap or link following
-- **Local folder support** — Point at a docs folder, get llms.txt
-- **Path filtering** — Only include `/docs/*` or specific sections
-- **Multiple output formats** — `llms.txt` and `llms-full.txt`
-- **No paid crawling APIs** — Runs locally, you own your data
+**aiready** crawls your site and generates this file automatically.
 
 ## Installation
 
 ```bash
-pip install llmstxt-generator
-```
-
-Or run directly:
-
-```bash
-npx llmstxt-generator https://example.com
+pip install aiready
 ```
 
 ## Usage
 
-### From a website
+```bash
+aiready https://yoursite.com
+```
+
+### Options
 
 ```bash
-llmstxt https://docs.example.com
+# Only include specific paths
+aiready https://example.com --include "/docs/*"
+
+# Exclude paths
+aiready https://example.com --exclude "/blog/*"
+
+# Limit pages
+aiready https://example.com --max-pages 50
+
+# Output to specific directory
+aiready https://example.com --output ./output
+
+# Skip AI summarization (faster, uses page titles only)
+aiready https://example.com --no-ai
 ```
 
 ### From a local folder
 
 ```bash
-llmstxt ./my-docs
-```
-
-### With options
-
-```bash
-llmstxt https://example.com \
-  --include "/docs/*" \
-  --exclude "/docs/archive/*" \
-  --max-pages 50 \
-  --output ./llms.txt
+aiready ./my-docs
 ```
 
 ## Output
 
-The tool generates two files:
+Two files are generated:
 
-**llms.txt** — Compact index with titles and descriptions:
+**llms.txt** — Compact index for AI agents:
 ```markdown
-# Example Docs
+# Your Site
 
-> Documentation for Example product
+> Brief description of your site
 
-## Guides
+## Docs
 
-- [Getting Started](/docs/getting-started): Quick guide to set up Example in 5 minutes
-- [Configuration](/docs/config): All configuration options explained
-- [API Reference](/docs/api): Complete API documentation with examples
+- [Getting Started](/docs/start): Quick setup guide for new users
+- [API Reference](/docs/api): Complete API documentation
 ```
 
-**llms-full.txt** — Full content for deeper context:
-```markdown
-# Example Docs
-
-> Documentation for Example product
-
----
-
-## Getting Started
-
-Full content of the getting started page...
-
----
+**llms-full.txt** — Full content for deeper context.
 
 ## Configuration
 
-Full content of the configuration page...
-```
-
-## Configuration
-
-Set your API key for AI-powered title/description generation:
+For AI-powered summaries, set your API key:
 
 ```bash
 export BINERIC_API_KEY=your-key-here
 ```
 
-Or use a `.env` file:
-
-```
-BINERIC_API_KEY=your-key-here
-```
-
-**Get your API key at [bineric.com/platform](https://bineric.com/platform)**
-
-### Environment Variables
+Get your API key at [bineric.com/platform](https://bineric.com/platform)
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -110,32 +81,20 @@ BINERIC_API_KEY=your-key-here
 | `BINERIC_API_URL` | API base URL | `https://api.bineric.com/v1` |
 | `BINERIC_MODEL` | Model to use | `bineric-1` |
 
-## How it works
+## Why llms.txt?
 
-1. **Discovery** — Finds all pages via sitemap.xml or by following links
-2. **Extraction** — Pulls main content from each page (strips nav, footer, etc.)
-3. **Summarization** — Uses AI to generate concise titles and descriptions
-4. **Output** — Writes spec-compliant llms.txt and llms-full.txt
+- **Be discovered** — AI agents will find and understand your site
+- **Control the narrative** — You decide how AI describes you
+- **Future-proof** — AI search is growing fast
 
-## Options
+## Learn more
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--include` | Only include paths matching pattern | `*` |
-| `--exclude` | Exclude paths matching pattern | none |
-| `--max-pages` | Maximum pages to process | 100 |
-| `--output` | Output directory or file | `./llms.txt` |
-| `--full` | Also generate llms-full.txt | true |
-| `--no-ai` | Skip AI summarization, use page titles | false |
+- [llms.txt spec](https://llmstxt.org/) by Answer.AI
 
 ## License
 
 MIT
 
-## Credits
+---
 
-Built by [Bineric Labs](https://bineric.com)
-
-Powered by [Bineric Platform](https://bineric.com/platform) - Privacy-focused AI
-
-Inspired by [llms.txt](https://llmstxt.org/) by Answer.AI
+Built by [Bineric](https://bineric.com)
